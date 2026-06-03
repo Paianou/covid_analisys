@@ -136,62 +136,7 @@ Agregação em Norte, Nordeste, Centro-Oeste, Sudeste e Sul mostra disparidades 
 | **Matplotlib & Seaborn** | Visualizações estáticas exploratórias |
 | **Power BI** | Dashboard interativo e publicação |
 
----
 
-## ▶️ Como Reproduzir
-
-### 1. Clone o repositório
-```bash
-git clone https://github.com/SEU-USUARIO/covid19-analise-brasil.git
-cd covid19-analise-brasil
-```
-
-### 2. Instale as dependências
-```bash
-pip install -r requirements.txt
-```
-
-### 3. Baixe os dados (Kaggle)
-```bash
-# Acesse: https://www.kaggle.com/datasets/taweilo/brazil-covid19-dataset
-# Extraia os CSVs na raiz do projeto:
-# - brazil_covid19.csv
-# - brazil_covid19_cities.csv
-# - brazil_covid19_macro.csv
-# - brazil_population_2019.csv
-# - brazil_cities_coordinates.csv
-```
-
-### 4. Execute a análise
-```bash
-python analise_covid_brasil_completa.py
-```
-
-**Output**:
-- CSVs processados em `data_bi/` (prontos para Power BI)
-- Gráficos em `outputs/figures/`
-
-### 5. Abra o Dashboard Power BI
-```bash
-# Abra power_bi/covid19_brasil_dashboard.pbix
-# Faça refresh dos dados (apontam para data_bi/)
-# Publique no Power BI Service
-```
-
----
-
-## 📊 Dashboard Power BI
-
-O dashboard inclui:
-
-- **Mapa interativo** — casos por município (heat map)
-- **Série temporal** — evolução de casos e mortes com slicer de datas
-- **KPIs** — casos totais, mortes, taxa de mortalidade
-- **Gráficos comparativos** — estados vs regiões
-- **Taxa por 100k** — índice de severidade por população
-- **Filtros dinâmicos** — por estado, região, período
-
----
 
 ## 📚 Documentação dos Dados
 
@@ -233,16 +178,6 @@ Quando apresentar este projeto:
 ✅ **Output reutilizável** — CSVs prontos para BI, código limpable  
 ✅ **Portfolio-ready** — README, estrutura, commits organizados  
 
----
-
-## 💡 Por Que Este Projeto Impressiona Recrutadores
-
-1. **Dados reais e significativos** — 2.3 milhões de linhas, problema de relevância social
-2. **Limpeza profissional** — tratamento de outliers, validação, documentação
-3. **Múltiplas perspectivas** — análise temporal, geográfica, demográfica
-4. **Ferramenta moderna** — Power BI é padrão em mercado
-5. **Insights acionáveis** — não é só "contagem de números", há descobertas
-6. **Código reproduzível** — anyone pode rodar e chegar às mesmas conclusões
 
 ---
 
