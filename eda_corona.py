@@ -1,6 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+import numpy as np
 
 # Leitura
 cidades_df = pd.read_csv('brazil_covid19_cities.csv')
@@ -50,6 +51,34 @@ print(f'Outliers removidos : {casos_df_outliers - len(casos_df)} linhas')
 
 casos_df['year'] = casos_df['date'].dt.year
 casos_df['month'] = casos_df['date'].dt.month
+
+#taxa mortaldidade
+casos_df['taxa_mortalidade'] = np.where(
+    casos_df['cases'] >= 0,
+    (casos_df['deaths'] / casos_df['cases'] * 100).round(2),
+0
+)
+
+casos_df['taxa_recuperacao'] = np.where(
+    casos_df['cases'] >= 0,
+    (casos_df['recovered'] / casos_df['cases'] * 100).round(2),
+    np.nan
+)
+
+regiao_df['date'] = pd.to_datetime(regiao_df['date'],errors='coerce')
+regiao_df=regiao_df.dropna(subset=['date','cases','deaths'])
+
+estado_resumo = regiao_df.groupby('state').agg(
+    total_casos=('cases', 'sum'),
+    total_mortes=('deaths', 'sum'),
+    primeiro_casos=('date', 'min'),
+    ultimo_registro=('date', 'max')
+).reset_index()
+
+estado_resumo['taxa_mortalidadea_estado'] = (
+    estado_resumo['total_mortes'] / estado_resumo['total_casos'] * 100
+).round(2)
+
 
 casos_df.groupby('month')['cases'].mean().plot()
 regiao_df.groupby('region')['cases'].sum()
