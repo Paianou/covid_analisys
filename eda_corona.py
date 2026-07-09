@@ -8,11 +8,11 @@ import warnings
 warnings.filterwarnings('ignore')
 
 # Leitura
-cidades_df = pd.read_csv('brazil_covid19_cities.csv')
-regiao_df = pd.read_csv('brazil_covid19.csv')
-casos_df = pd.read_csv('brazil_covid19_macro.csv')
-populacao_df = pd.read_csv('brazil_population_2019.csv', on_bad_lines='skip')
-coordenadas_df = pd.read_csv('brazil_cities_coordinates.csv')
+cidades_df = pd.read_csv('data/raw/brazil_covid19_cities.csv')
+regiao_df = pd.read_csv('data/raw/brazil_covid19.csv')
+casos_df = pd.read_csv('data/raw/brazil_covid19_macro.csv')
+populacao_df = pd.read_csv('data/raw/brazil_population_2019.csv', on_bad_lines='skip')
+coordenadas_df = pd.read_csv('data/raw/brazil_cities_coordinates.csv')
 
 # Info básica
 print(f'Cidades: {cidades_df.shape[0]:,} linhas | {cidades_df.shape[1]} colunas')
@@ -159,15 +159,15 @@ print(top20_cidades[['name','state','total_casos','total_mortes','casos_por_100k
 
 
 import os
-os.makedirs('data_bi', exist_ok=True)
+os.makedirs('data/processed', exist_ok=True)
 
-serie_diaria.to_csv('data_bi/01_serie_temporal_diaria.csv', index=False)
-estado_resumo.to_csv('data_bi/02_resumo_por_estado.csv', index=False)
-regiao_resumo.to_csv('data_bi/03_resumo_por_regiao.csv', index=False)
-cidades_resumo.to_csv('data_bi/04_resumo_por_cidade.csv', index=False)
-serie_mensal_agr.to_csv('data_bi/05_serie_temporal_mensal.csv', index=False)
+serie_diaria.to_csv('data/processed/01_serie_temporal_diaria.csv', index=False)
+estado_resumo.to_csv('data/processed/02_resumo_por_estado.csv', index=False)
+regiao_resumo.to_csv('data/processed/03_resumo_por_regiao.csv', index=False)
+cidades_resumo.to_csv('data/processed/04_resumo_por_cidade.csv', index=False)
+serie_mensal_agr.to_csv('data/processed/05_serie_temporal_mensal.csv', index=False)
 
-regiao_df.to_csv('data_bi/bruto_covid_por_estado.csv', index=False)
+regiao_df.to_csv('data/processed/bruto_covid_por_estado.csv', index=False)
 
 casos_df.groupby('month')['cases'].mean().plot()
 regiao_df.groupby('region')['cases'].sum()

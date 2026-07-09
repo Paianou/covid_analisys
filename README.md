@@ -51,13 +51,22 @@ Fonte: [Kaggle — Brazil COVID-19 Dataset](https://www.kaggle.com/datasets/tawe
 ```
 covid_analisys/
 ├── eda_corona.py                  ← script principal de análise
-├── data_bi/                       ← outputs preparados para BI
-├── brazil_covid19.csv
-├── brazil_covid19_cities.csv
-└── brazil_covid19_macro.csv
+└── data/
+    ├── raw/                       ← datasets brutos (fonte: Kaggle)
+    │   ├── brazil_covid19.csv
+    │   ├── brazil_covid19_cities.csv
+    │   ├── brazil_covid19_macro.csv
+    │   ├── brazil_covid19_old.csv
+    │   ├── brazil_cities_coordinates.csv
+    │   └── brazil_population_2019.csv
+    └── processed/                 ← outputs gerados por eda_corona.py (para BI)
+        ├── 01_serie_temporal_diaria.csv
+        ├── 02_resumo_por_estado.csv
+        ├── 03_resumo_por_regiao.csv
+        ├── 04_resumo_por_cidade.csv
+        ├── 05_serie_temporal_mensal.csv
+        └── bruto_covid_por_estado.csv
 ```
-
-> ⚠️ **Em organização:** os CSVs ainda estão versionados na raiz do repositório. A próxima etapa é movê-los para uma pasta `data/raw/` e adicioná-los ao `.gitignore`, já que arquivos de dados brutos não devem ficar no controle de versão.
 
 ---
 
@@ -69,7 +78,7 @@ cd covid_analisys
 pip install pandas matplotlib
 ```
 
-Baixe os CSVs em [kaggle.com/datasets/taweilo/brazil-covid19-dataset](https://www.kaggle.com/datasets/taweilo/brazil-covid19-dataset) e coloque na raiz do projeto antes de rodar:
+Baixe os CSVs em [kaggle.com/datasets/taweilo/brazil-covid19-dataset](https://www.kaggle.com/datasets/taweilo/brazil-covid19-dataset) e coloque em `data/raw/` antes de rodar:
 
 ```bash
 python eda_corona.py
@@ -85,12 +94,12 @@ python eda_corona.py
 
 ## 🚀 Próximos passos
 
-- [ ] Mover CSVs para `data/raw/` e adicionar `.gitignore`
+- [x] Mover CSVs para `data/raw/` e `data/processed/`
 - [ ] Salvar os gráficos gerados em `outputs/figures/` com `plt.savefig()`
 - [ ] Calcular e documentar taxa de mortalidade por estado
 - [ ] Cruzar com dados de população para taxa por 100 mil habitantes
 - [ ] Adicionar `requirements.txt`
-- [ ] Construir dashboard no Power BI a partir dos dados de `data_bi/`
+- [ ] Construir dashboard no Power BI a partir dos dados de `data/processed/`
 
 ---
 
