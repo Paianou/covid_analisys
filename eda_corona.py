@@ -7,14 +7,14 @@ import warnings
 
 warnings.filterwarnings('ignore')
 
-# Leitura
-cidades_df = pd.read_csv('data/raw/brazil_covid19_cities.csv')
+
+cidades_df = pd.read_csv('data/raw/brazil_covid19_cities.csv', encoding='latin-1')
 regiao_df = pd.read_csv('data/raw/brazil_covid19.csv')
 casos_df = pd.read_csv('data/raw/brazil_covid19_macro.csv')
-populacao_df = pd.read_csv('data/raw/brazil_population_2019.csv', on_bad_lines='skip')
+populacao_df = pd.read_csv('data/raw/brazil_population_2019.csv', on_bad_lines='skip', encoding='latin-1')
 coordenadas_df = pd.read_csv('data/raw/brazil_cities_coordinates.csv')
 
-# Info básica
+
 print(f'Cidades: {cidades_df.shape[0]:,} linhas | {cidades_df.shape[1]} colunas')
 print(f"Regiões: {regiao_df.shape[0]:,} linhas | {regiao_df.shape[1]} colunas")
 print(f"Casos: {casos_df.shape[0]:,} linhas | {casos_df.shape[1]} colunas")
@@ -23,23 +23,25 @@ print(f"Coordenadas: {coordenadas_df.shape[0]:,} linhas | {coordenadas_df.shape[
 
 print(casos_df.describe())
 
-# Limpeza
+
 for df in [cidades_df, casos_df, regiao_df]:
     df['date'] = pd.to_datetime(df['date'],errors='coerce')
-
-for df in [casos_df]:df['date'].dt.strftime('%d/%m/%Y')
 
 print(f'\nNulos em Casos_df antes: {casos_df.isnull().sum().sum()}')
 casos_df = casos_df.dropna(subset=['date','cases','deaths'])
 print(f'Nulos em casos_df depois: {casos_df.isnull().sum().sum()}')
 
-print("Média de casos:", casos_df['cases'].mean())
-print("Maior valor:", casos_df['cases'].max())
-print("Menor valor:", casos_df['cases'].min())
+print("Média de casos (acumulado):", casos_df['cases'].mean())
+print("Maior valor (acumulado):", casos_df['cases'].max())
+print("Menor valor (acumulado):", casos_df['cases'].min())
 
-# Outliers usada para identificar valores extremos tendeu
-q1 = casos_df['cases'].quantile(0.25)
-q3 = casos_df['cases'].quantile(0.75)
+
+casos_df = casos_df.sort_values('date')
+casos_df['casos_novos'] = casos_df['cases'].diff().fillna(casos_df['cases'])
+casos_df['mortes_novas'] = casos_df['deaths'].diff().fillna(casos_df['deaths'])
+
+q1 = casos_df['casos_novos'].quantile(0.25)
+q3 = casos_df['casos_novos'].quantile(0.75)
 iqr = q3 - q1
 
 limite_baixo = q1 - 1.5 * iqr
@@ -47,24 +49,21 @@ limite_alto = q3 + 1.5 * iqr
 
 casos_df_outliers = len(casos_df)
 casos_df = casos_df[
-    (casos_df['cases'] >= limite_baixo) &
-    (casos_df['cases'] <= limite_alto)
+    (casos_df['casos_novos'] >= limite_baixo) &
+    (casos_df['casos_novos'] <= limite_alto)
 ]
 
-print(f'Outliers removidos : {casos_df_outliers - len(casos_df)} linhas')
+print(f'Outliers removidos (casos novos por dia) : {casos_df_outliers - len(casos_df)} linhas')
 
-casos_df['year'] = casos_df['date'].dt.year
-casos_df['month'] = casos_df['date'].dt.month
 
-#taxa mortaldidade
 casos_df['taxa_mortalidade'] = np.where(
-    casos_df['cases'] >= 0,
+    casos_df['cases'] > 0,
     (casos_df['deaths'] / casos_df['cases'] * 100).round(2),
 0
 )
 
 casos_df['taxa_recuperacao'] = np.where(
-    casos_df['cases'] >= 0,
+    casos_df['cases'] > 0,
     (casos_df['recovered'] / casos_df['cases'] * 100).round(2),
     np.nan
 )
@@ -72,9 +71,10 @@ casos_df['taxa_recuperacao'] = np.where(
 regiao_df['date'] = pd.to_datetime(regiao_df['date'],errors='coerce')
 regiao_df=regiao_df.dropna(subset=['date','cases','deaths'])
 
-estado_resumo = regiao_df.groupby('state').agg(
-    total_casos=('cases', 'sum'),
-    total_mortes=('deaths', 'sum'),
+estado_resumo = regiao_df.sort_values('date').groupby('state').agg(
+    region=('region', 'first'),
+    total_casos=('cases', 'last'),
+    total_mortes=('deaths', 'last'),
     primeiro_casos=('date', 'min'),
     ultimo_registro=('date', 'max')
 ).reset_index()
@@ -85,9 +85,9 @@ estado_resumo['taxa_mortalidadea_estado'] = (
 
 print('Resumo por Estado :',estado_resumo)
 
-regiao_resumo = regiao_df.groupby('region').agg(
-total_casos = ('cases', 'sum'),
-total_mortes = ('deaths', 'sum')
+regiao_resumo = estado_resumo.groupby('region').agg(
+total_casos = ('total_casos', 'sum'),
+total_mortes = ('total_mortes', 'sum')
 ).reset_index()
 
 regiao_resumo['taxa_mortalidade_regiao'] = (
@@ -97,26 +97,25 @@ regiao_resumo['taxa_mortalidade_regiao'] = (
 print('Resumo por Regiao :',regiao_resumo)
 
 serie_diaria = regiao_df.groupby('date').agg(
-    casos_diarios = ('cases', 'sum'),
-    mortes_diarios = ('deaths', 'sum')
+    casos_acumulados = ('cases', 'sum'),
+    mortes_acumuladas = ('deaths', 'sum')
 ).reset_index().sort_values('date')
 
-serie_diaria['casos_media_movel_7d'] = serie_diaria['casos_diarios'].rolling(window=7, min_periods=1).mean().round(0)
-serie_diaria['mortes_media_movel_7d'] = serie_diaria['mortes_diarios'].rolling(window=7, min_periods=1).mean().round(2)
+serie_diaria['casos_novos'] = serie_diaria['casos_acumulados'].diff().fillna(serie_diaria['casos_acumulados'])
+serie_diaria['mortes_novas'] = serie_diaria['mortes_acumuladas'].diff().fillna(serie_diaria['mortes_acumuladas'])
 
-serie_diaria['casos_acumulados'] = serie_diaria['casos_diarios'].cumsum()
-serie_diaria['mortes_acumulados'] =serie_diaria['mortes_diarios'].cumsum()
+serie_diaria['casos_media_movel_7d'] = serie_diaria['casos_novos'].rolling(window=7, min_periods=1).mean().round(0)
+serie_diaria['mortes_media_movel_7d'] = serie_diaria['mortes_novas'].rolling(window=7, min_periods=1).mean().round(2)
 
 print(f"\n Período: {serie_diaria['date'].min().date()} a {serie_diaria['date'].max().date()}")
 print(f"   Total de dias: {len(serie_diaria)}")
 print(f"   Casos acumulados: {serie_diaria['casos_acumulados'].iloc[-1]:,.0f}")
-print(f"   Mortes acumuladas: {serie_diaria['mortes_acumulados'].iloc[-1]:,.0f}")
+print(f"   Mortes acumuladas: {serie_diaria['mortes_acumuladas'].iloc[-1]:,.0f}")
 
-serie_mensal = regiao_df.copy()
-serie_mensal['year_month'] = serie_mensal['date'].dt.to_period('M')
-serie_mensal_agr = serie_mensal.groupby('year_month').agg(
-    casos_mensais = ('cases', 'sum'),
-    mortes_mensais = ('deaths', 'sum')
+serie_diaria['year_month'] = serie_diaria['date'].dt.to_period('M')
+serie_mensal_agr = serie_diaria.groupby('year_month').agg(
+    casos_mensais = ('casos_novos', 'sum'),
+    mortes_mensais = ('mortes_novas', 'sum')
 ).reset_index()
 
 print('Resumo Mensal (ultimo 6 meses ):',serie_mensal_agr.tail(6))
@@ -124,11 +123,11 @@ print('Resumo Mensal (ultimo 6 meses ):',serie_mensal_agr.tail(6))
 cidades_df['date'] = pd.to_datetime(cidades_df['date'], errors='coerce')
 cidades_df = cidades_df.dropna(subset=['date','cases','deaths'])
 
-cidades_resumo = cidades_df.groupby('code').agg(
+cidades_resumo = cidades_df.sort_values('date').groupby('code').agg(
     name=('name', 'first'),
     state=('state', 'first'),
-    total_casos=('cases', 'sum'),
-    total_mortes=('deaths', 'sum'),
+    total_casos=('cases', 'last'),
+    total_mortes=('deaths', 'last'),
     primeirocaso=('date', 'min'),
     ultimoregistro=('date', 'max')
 ).reset_index()
@@ -144,6 +143,8 @@ cidades_resumo = cidades_resumo.merge(
     on='code',
     how='left'
 )
+
+print(f"\nCidades com população encontrada: {cidades_resumo['population'].notna().sum()} de {len(cidades_resumo)}")
 
 cidades_resumo['mortes_por_100k']=(
     cidades_resumo['total_mortes'] / cidades_resumo['population'] * 100000
@@ -169,40 +170,41 @@ serie_mensal_agr.to_csv('data/processed/05_serie_temporal_mensal.csv', index=Fal
 
 regiao_df.to_csv('data/processed/bruto_covid_por_estado.csv', index=False)
 
-casos_df.groupby('month')['cases'].mean().plot()
-regiao_df.groupby('region')['cases'].sum()
+serie_mensal_agr.set_index('year_month')['casos_mensais'].plot()
+plt.title('Média de casos novos por mês')
+plt.show()
+
 #boxplot
-sns.boxplot(x=casos_df['cases'],color= '#E2847D')
-plt.title('Boxplot de casos')
+sns.boxplot(x=casos_df['casos_novos'],color= '#E2847D')
+plt.title('Boxplot de casos novos (por dia)')
 plt.show()
 
 # Casos
-df_time = casos_df.groupby('date')['cases'].sum()
+df_time = casos_df.set_index('date')['cases']
 
 plt.figure(figsize=(10,5),)
 df_time.plot()
-plt.title('Casos ao longo do tempo')
+plt.title('Casos acumulados ao longo do tempo')
 plt.show()
 
 # Top estados
-top = regiao_df.groupby('state')['cases'].sum().sort_values(ascending=False).head(10)
+top = regiao_df.groupby('state')['cases'].max().sort_values(ascending=False).head(10)
 
 plt.figure(figsize=(10,5))
 top.plot(kind='bar')
 plt.title('Top 10 estados')
 plt.show()
 
-# Mortes por mês
-casos_df['month'] = casos_df['date'].dt.to_period('M')
-monthly_deaths = casos_df.groupby('month')['deaths'].sum()
+# Mortes por mes
+monthly_deaths = serie_mensal_agr.set_index('year_month')['mortes_mensais']
 
 plt.figure(figsize=(10,5))
 monthly_deaths.plot(kind='barh')
 plt.title('Mortes por mês')
 plt.show()
 
-plt.scatter(casos_df['cases'], casos_df['deaths'],color='#E0A96D')
-plt.xlabel('Casos')
-plt.ylabel('Mortes')
-plt.title('Casos vs Mortes')
+plt.scatter(casos_df['casos_novos'], casos_df['mortes_novas'],color='#E0A96D')
+plt.xlabel('Casos novos (dia)')
+plt.ylabel('Mortes novas (dia)')
+plt.title('Casos novos vs Mortes novas (diário)')
 plt.show()
